@@ -169,25 +169,26 @@ def prepare_draft_results(draft_results_df):
 def simulate_team_projections(draft_results, projection_lookup, num_simulations):
     num_teams = draft_results.shape[0]
     total_payouts = np.zeros(num_teams)
-
     for sim in range(num_simulations):
         total_points = np.zeros(num_teams)
         for i in range(num_teams):
+            team_points = 0
             for j in range(6):  # Loop through all 6 players
                 player_name = draft_results[i, j]
                 if player_name in projection_lookup:
                     proj, projsd = projection_lookup[player_name]
                     simulated_points = generate_projection(proj, projsd)
-                    total_points[i] += simulated_points
-                    
-
+                    team_points += simulated_points
+                else:
+                    print(f"Warning: Player {player_name} not found in projections for team {i+1}")
+            total_points[i] = team_points
+            print(f"Team {i+1} total points: {team_points}")
         ranks = total_points.argsort()[::-1].argsort() + 1
         payouts = np.array([get_payout(rank) for rank in ranks])
         total_payouts += payouts
-
     avg_payouts = total_payouts / num_simulations
     return avg_payouts
-
+                    
 def run_parallel_simulations(num_simulations, draft_results_df, projection_lookup):
     draft_results, teams = prepare_draft_results(draft_results_df)
     
