@@ -15,7 +15,6 @@ st.write("For the team stacking bonus, use .99 if you want stack frequency to mi
 st.write("Current supported sports: NFL, CFB, PGA.")
 
 
-add_auth(required=True)
 
 # Path to your Excel file
 sample_xlsx_path = 'Blank Analysis Template.xlsx'
