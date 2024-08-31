@@ -169,11 +169,11 @@ def prepare_draft_results(draft_results_df):
 def simulate_team_projections(draft_results, projection_lookup, num_simulations):
     num_teams = draft_results.shape[0]
     total_payouts = np.zeros(num_teams)
-    all_team_points = []  # List to store team points for each simulation
+    all_team_points = []
 
     for sim in range(num_simulations):
         total_points = np.zeros(num_teams)
-        sim_team_points = []  # Store points for each team in this simulation
+        sim_team_points = []
 
         for i in range(num_teams):
             team_points = 0
@@ -207,6 +207,9 @@ final_results = pd.DataFrame({
     'Average_Payout': avg_payouts,
     'Average_Points': avg_team_points
 })
+
+# Save to CSV
+final_results.to_csv('simulation_results.csv', index=False)
 
 # Save to CSV
 final_results.to_csv('simulation_results.csv', index=False)
