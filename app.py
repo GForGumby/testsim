@@ -17,7 +17,7 @@ st.write("Current supported sports: NFL, CFB, PGA.")
 
 
 
-)
+
 
 st.write("Paste your sim results and draft results into the above file for more automated analysis")
 
