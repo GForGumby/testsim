@@ -203,10 +203,7 @@ def run_parallel_simulations(num_simulations, draft_results_df, projection_looku
     
     return final_results
 
-# Streamlit app
-sample_csv_path = 'NFL WEEK 1 ADP TEMPLATE.csv'
-with open(sample_csv_path, 'rb') as file:
-    sample_csv = file.read()
+
 
 
 
