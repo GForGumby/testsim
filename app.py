@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from numba import jit, prange
-from st_paywall import add_auth
 import io
 from openpyxl import load_workbook
 
