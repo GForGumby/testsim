@@ -1,44 +1,20 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from numba import jit, prange
-import io
-from openpyxl import load_workbook
 
-st.title("GUMBY SIMS- The first publicly available contest sim tool on Underdog. Take your game to the next level by simming out the highest ROI lineups,  optimal exposure percentages, and chalkiest field combos. ")
 
-st.write("TO MANAGE YOUR SUBSCRIPTION GO HERE https://billing.stripe.com/p/login/9AQ4jFeRDbHTaIMfYY")
-st.write("Please watch the entirety of this video explaining the product before purchasing (https://www.youtube.com/watch?v=tF9BU7yNdDI). I am available on twitter @GumbyUD for any questions or concerns about the product.")
-st.write("On a CFB sized slate, it takes about 3 mins to run the draft sim (1884 sims), and about 5 mins to run 5000 instances of the projection sim.")
-st.write("For the team stacking bonus, use .99 if you want stack frequency to mimic real drafts. Use .98 if you want slightly more, and 1.00 for no stacking. The lower it is the more frequent stacks are in your field of lineups. I wouldn't make it lower than .95 except for MLB, which I am currently still testing.") 
-st.write("Current supported sports: NFL, CFB, PGA.")
+st.subheader("------------------------------------------------------------------------------")
 
 
 
 
 
+st.subheader("PGA Tour Championship Rd2")
 
 
-st.write("Paste your sim results and draft results into the above file for more automated analysis")
-
-
-
-
-
-
-
-
-st.subheader("NFL BR WEEK 1")
-
-
-# Function to simulate a single draft
-def simulate_draft(df, starting_team_num, num_teams=6, num_rounds=6, team_bonus=.99):
+def simulate_draft(df, starting_team_num, num_teams=6, num_rounds=6, team_bonus=1.00):
     df_copy = df.copy()
     df_copy['Simulated ADP'] = np.random.normal(df_copy['adp'], df_copy['adpsd'])
     df_copy.sort_values('Simulated ADP', inplace=True)
     
     teams = {f'Team {i + starting_team_num}': [] for i in range(num_teams)}
-    team_positions = {f'Team {i + starting_team_num}': {"QB": 0, "RB": 0, "WR": 0, "TE": 0, "FLEX": 0} for i in range(num_teams)}
     teams_stack = {f'Team {i + starting_team_num}': [] for i in range(num_teams)}
     
     for round_num in range(num_rounds):
@@ -47,25 +23,7 @@ def simulate_draft(df, starting_team_num, num_teams=6, num_rounds=6, team_bonus=
             if not df_copy.empty:
                 team_name = f'Team {pick_num + starting_team_num}'
                 
-                draftable_positions = []
-                if team_positions[team_name]["QB"] < 1:
-                    draftable_positions.append("QB")
-                if team_positions[team_name]["RB"] < 1:
-                    draftable_positions.append("RB")
-                if team_positions[team_name]["WR"] < 2:
-                    draftable_positions.append("WR")
-                if team_positions[team_name]["TE"] < 1:
-                    draftable_positions.append("TE")
-                if team_positions[team_name]["FLEX"] < 1 and (team_positions[team_name]["RB"] + team_positions[team_name]["WR"] < 5):
-                    draftable_positions.append("FLEX")
-                
-                df_filtered = df_copy.loc[
-                    df_copy['position'].isin(draftable_positions) | 
-                    ((df_copy['position'].isin(['RB', 'WR'])) & ('FLEX' in draftable_positions))
-                ].copy()
-                
-                if df_filtered.empty:
-                    continue
+                df_filtered = df_copy.copy()
                 
                 df_filtered['Adjusted ADP'] = df_filtered.apply(
                     lambda x: x['Simulated ADP'] * team_bonus 
@@ -76,21 +34,14 @@ def simulate_draft(df, starting_team_num, num_teams=6, num_rounds=6, team_bonus=
                 df_filtered.sort_values('Adjusted ADP', inplace=True)
                 
                 selected_player = df_filtered.iloc[0]
+                selected_player['position'] = 'G'  # Set all positions to 'G'
                 teams[team_name].append(selected_player)
                 teams_stack[team_name].append(selected_player['team'])
-                position = selected_player['position']
-                if position in ["RB", "WR"]:
-                    if team_positions[team_name][position] < {"RB": 1, "WR": 2}[position]:
-                        team_positions[team_name][position] += 1
-                    else:
-                        team_positions[team_name]["FLEX"] += 1
-                else:
-                    team_positions[team_name][position] += 1
                 df_copy = df_copy.loc[df_copy['player_id'] != selected_player['player_id']]
     
     return teams
 
-def run_simulations(df, num_simulations=10, num_teams=6, num_rounds=6, team_bonus=.99):
+def run_simulations(df, num_simulations=10, num_teams=6, num_rounds=6, team_bonus=1.00):
     all_drafts = []
     for sim_num in range(num_simulations):
         starting_team_num = sim_num * num_teams + 1
@@ -106,49 +57,45 @@ def generate_projection(median, std_dev):
 @jit(nopython=True)
 def get_payout(rank):
     if rank == 1:
-        return 5000.00
-    elif rank == 2:
         return 2500.00
+    elif rank == 2:
+        return 1750.00
     elif rank == 3:
-        return 1250.00
+        return 1000.00
     elif rank == 4:
-        return 750.00
+        return 825.00
     elif rank == 5:
         return 600.00
-    elif 6 <= rank <= 10:
+    elif 6 <= rank <= 7:
         return 500.00
-    elif 11 <= rank <= 15:
+    elif 8 <= rank <= 10:
         return 400.00
-    elif 16 <= rank <= 20:
+    elif 11 <= rank <= 13:
         return 300.00
-    elif 21 <= rank <= 25:
-        return 250.00
-    elif 26 <= rank <= 30:
+    elif 14 <= rank <= 16:
         return 200.00
-    elif 31 <= rank <= 35:
+    elif 17 <= rank <= 20:
         return 150.00
-    elif 36 <= rank <= 40:
+    elif 21 <= rank <= 25:
         return 100.00
-    elif 41 <= rank <= 45:
+    elif 26 <= rank <= 30:
+        return 90.00
+    elif 31 <= rank <= 35:
+        return 80.00
+    elif 36 <= rank <= 40:
         return 75.00
-    elif 46 <= rank <= 50:
+    elif 41 <= rank <= 45:
         return 60.00
-    elif 51 <= rank <= 55:
+    elif 46 <= rank <= 50:
         return 50.00
-    elif 56 <= rank <= 85:
-        return 40.00
-    elif 86 <= rank <= 135:
-        return 30.00
-    elif 136 <= rank <= 210:
+    elif 51 <= rank <= 100:
         return 25.00
-    elif 211 <= rank <= 325:
-        return 20.00
-    elif 326 <= rank <= 505:
+    elif 101 <= rank <= 400:
         return 15.00
-    elif 506 <= rank <= 2495:
+    elif 401 <= rank <= 1000:
         return 10.00
     else:
-        return 0.00
+        return 0.00  # No payout for ranks beyond 1000
 
 def prepare_draft_results(draft_results_df):
     teams = draft_results_df['Team'].unique()
@@ -169,52 +116,24 @@ def prepare_draft_results(draft_results_df):
 def simulate_team_projections(draft_results, projection_lookup, num_simulations):
     num_teams = draft_results.shape[0]
     total_payouts = np.zeros(num_teams)
-    all_team_points = []
 
     for sim in range(num_simulations):
         total_points = np.zeros(num_teams)
-        sim_team_points = []
-
         for i in range(num_teams):
-            team_points = 0
             for j in range(6):  # Loop through all 6 players
                 player_name = draft_results[i, j]
                 if player_name in projection_lookup:
                     proj, projsd = projection_lookup[player_name]
                     simulated_points = generate_projection(proj, projsd)
-                    team_points += simulated_points
-                else:
-                    print(f"Warning: Player {player_name} not found in projections for team {i+1}")
-            total_points[i] = team_points
-            sim_team_points.append(team_points)
+                    total_points[i] += simulated_points
 
-        all_team_points.append(sim_team_points)
         ranks = total_points.argsort()[::-1].argsort() + 1
         payouts = np.array([get_payout(rank) for rank in ranks])
         total_payouts += payouts
 
     avg_payouts = total_payouts / num_simulations
-    avg_team_points = np.mean(all_team_points, axis=0)
+    return avg_payouts
 
-    return avg_payouts, avg_team_points
-
-# Then, in your main code where you call this function:
-results = simulate_team_projections(draft_results, projection_lookup, num_simulations)
-avg_payouts, avg_team_points = results
-
-# When creating your final results DataFrame:
-final_results = pd.DataFrame({
-    'Team': teams,
-    'Average_Payout': avg_payouts,
-    'Average_Points': avg_team_points
-})
-
-# Save to CSV
-final_results.to_csv('simulation_results.csv', index=False)
-
-# Save to CSV
-final_results.to_csv('simulation_results.csv', index=False)
-                    
 def run_parallel_simulations(num_simulations, draft_results_df, projection_lookup):
     draft_results, teams = prepare_draft_results(draft_results_df)
     
@@ -230,12 +149,20 @@ def run_parallel_simulations(num_simulations, draft_results_df, projection_looku
     
     return final_results
 
+# Streamlit app
+sample_csv_path = 'PGA TOUR CHAMP RD2.csv'
+with open(sample_csv_path, 'rb') as file:
+    sample_csv = file.read()
 
-
-
+st.download_button(
+    label="PGA TOUR CHAMP RD2",
+    data=sample_csv,
+    file_name='PGA TOUR CHAMP RD2.csv',
+    mime='text/csv',
+)
 
 # File upload for ADP
-adp_file = st.file_uploader("Upload your NFL ADP CSV file", type=["csv"])
+adp_file = st.file_uploader("Upload your PGA ADP CSV file", type=["csv"])
 
 if adp_file is not None:
     df = pd.read_csv(adp_file)
@@ -273,15 +200,15 @@ if adp_file is not None:
         
         csv = draft_results_df.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label="Download Draft Results",
+            label="Download PGA Draft Results",
             data=csv,
-            file_name='nfl_draft_results.csv',
+            file_name='pga_draft_results.csv',
             mime='text/csv',
         )
 
 # File uploaders for projections and draft results
-projections_file = st.file_uploader("Choose a CSV with NFL player projections", type="csv")
-draft_results_file = st.file_uploader("Choose a CSV file with NFL draft results", type="csv")
+projections_file = st.file_uploader("Choose a CSV file with PGA projections", type="csv")
+draft_results_file = st.file_uploader("Choose a CSV file with PGA draft results", type="csv")
 
 if projections_file is not None and draft_results_file is not None:
     projections_df = pd.read_csv(projections_file)
@@ -308,9 +235,8 @@ if projections_file is not None and draft_results_file is not None:
 
         csv = final_results.to_csv(index=False)
         st.download_button(
-            label="Download Projection Results as CSV",
+            label="Download PGA Projection Results as CSV",
             data=csv,
-            file_name="projection_simulation_results.csv",
+            file_name="pga_projection_simulation_results.csv",
             mime="text/csv",
         )
-
