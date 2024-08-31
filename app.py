@@ -199,7 +199,8 @@ def simulate_team_projections(draft_results, projection_lookup, num_simulations)
     return avg_payouts, avg_team_points
 
 # Then, in your main code where you call this function:
-avg_payouts, avg_team_points = simulate_team_projections(draft_results, projection_lookup, num_simulations)
+results = simulate_team_projections(draft_results, projection_lookup, num_simulations)
+avg_payouts, avg_team_points = results
 
 # When creating your final results DataFrame:
 final_results = pd.DataFrame({
