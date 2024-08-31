@@ -1,0 +1,8 @@
+pandas
+numpy
+streamlit
+numba
+scipy
+stripe
+st-paywall
+openpyxl
