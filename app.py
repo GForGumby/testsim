@@ -169,8 +169,12 @@ def prepare_draft_results(draft_results_df):
 def simulate_team_projections(draft_results, projection_lookup, num_simulations):
     num_teams = draft_results.shape[0]
     total_payouts = np.zeros(num_teams)
+    all_team_points = []  # List to store team points for each simulation
+
     for sim in range(num_simulations):
         total_points = np.zeros(num_teams)
+        sim_team_points = []  # Store points for each team in this simulation
+
         for i in range(num_teams):
             team_points = 0
             for j in range(6):  # Loop through all 6 players
@@ -182,12 +186,30 @@ def simulate_team_projections(draft_results, projection_lookup, num_simulations)
                 else:
                     print(f"Warning: Player {player_name} not found in projections for team {i+1}")
             total_points[i] = team_points
-            print(f"Team {i+1} total points: {team_points}")
+            sim_team_points.append(team_points)
+
+        all_team_points.append(sim_team_points)
         ranks = total_points.argsort()[::-1].argsort() + 1
         payouts = np.array([get_payout(rank) for rank in ranks])
         total_payouts += payouts
+
     avg_payouts = total_payouts / num_simulations
-    return avg_payouts
+    avg_team_points = np.mean(all_team_points, axis=0)
+
+    return avg_payouts, avg_team_points
+
+# Then, in your main code where you call this function:
+avg_payouts, avg_team_points = simulate_team_projections(draft_results, projection_lookup, num_simulations)
+
+# When creating your final results DataFrame:
+final_results = pd.DataFrame({
+    'Team': teams,
+    'Average_Payout': avg_payouts,
+    'Average_Points': avg_team_points
+})
+
+# Save to CSV
+final_results.to_csv('simulation_results.csv', index=False)
                     
 def run_parallel_simulations(num_simulations, draft_results_df, projection_lookup):
     draft_results, teams = prepare_draft_results(draft_results_df)
