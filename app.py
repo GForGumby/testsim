@@ -209,7 +209,6 @@ with open(sample_csv_path, 'rb') as file:
     sample_csv = file.read()
 
 
-)
 
 # File upload for ADP
 adp_file = st.file_uploader("Upload your NFL ADP CSV file", type=["csv"])
